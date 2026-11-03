@@ -1,0 +1,77 @@
+:root {
+  /* ---- 1. PRIMITIVE ---- */
+  --ink-950: #0b0f15;
+  --ink-900: #0f141c;
+  --ink-800: #151b24;
+  --ink-700: #1f2733;
+  --ink-600: #2c3644;
+  --ink-400: #6e7a89;
+  --ink-200: #a9b4c2;
+  --ink-50: #eef1f5;
+
+  --orange-500: #ff6a3d;
+  --orange-500-a40: rgb(255 106 61 / 0.4);
+  --amber-400: #f5b83d;
+  --amber-400-a22: rgb(245 184 61 / 0.22);
+  --cyan-400: #5bd1e8;
+  --grey-500: #5a6573;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --font-display: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --tracking-wide: 0.12em;
+  --leading-tight: 1.15;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --shadow-glow-orange: 0 0 18px var(--orange-500-a40);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur-med: 280ms;
+
+  --tap-min: 44px;
+  --bar-height: 72px;
+  --toggle-min: 72px;
+  --card-min: 150px;
+  --page-max: 960px;
+  --icon-md: 20px;
+  --border-hairline: 1px;
+  --dur-pulse: 1.4s;
+  --shrink-press: 0.97;
+
+  /* SVG-Geometrie in Kartenpixeln */
+  --stroke-thin: 1.5;
+  --stroke-mid: 2;
+  --stroke-bold: 3;
+  --map-label: 13px;
+
+  /* ---- 2. SEMANTIC ---- */
+  --color-bg: var(--ink-950);
+  --color-surface: var(--ink-800);
+  --color-surface-raised: var(--ink-700);
+  --color-border: var(--ink-600);
+  --color-text: var(--ink-50);
+  --color-text-muted: var(--ink-200);
+  --color-text-faint: var(--ink-400);
+
+  --color-enemy: var(--orange-500);
+  --color-you: var(--amber-400);
+  --color-you-field: var(--amber-400-a22);
+  --color-start: var(--cyan-400);
+  --color-blocked: var(--grey-500);
+  --color-on-accent: var(--ink-950);
+
+  --space-gutter: var(--space-4);
+}

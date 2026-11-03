@@ -1,0 +1,67 @@
+[
+ {
+  "id": "cachette",
+  "name": "Cachette",
+  "measured": false
+ },
+ {
+  "id": "coal",
+  "name": "Coal",
+  "measured": false
+ },
+ {
+  "id": "lithium",
+  "name": "Lithium",
+  "measured": false
+ },
+ {
+  "id": "lotus",
+  "name": "Lotus",
+  "measured": false
+ },
+ {
+  "id": "mumbai",
+  "name": "Mumbai",
+  "measured": false
+ },
+ {
+  "id": "munition",
+  "name": "Munition",
+  "measured": false
+ },
+ {
+  "id": "nautical",
+  "name": "Nautical",
+  "measured": false
+ },
+ {
+  "id": "reactor-u92",
+  "name": "Reactor U92",
+  "measured": false
+ },
+ {
+  "id": "rooftops",
+  "name": "Rooftops",
+  "measured": false
+ },
+ {
+  "id": "sentry",
+  "name": "Sentry",
+  "measured": false
+ },
+ {
+  "id": "shipment",
+  "name": "Shipment",
+  "measured": false
+ },
+ {
+  "id": "silkworm",
+  "name": "Silkworm",
+  "measured": true
+ },
+ {
+  "id": "transit-213",
+  "name": "Transit 213",
+  "measured": false
+ }
+]
