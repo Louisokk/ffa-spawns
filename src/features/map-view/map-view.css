@@ -100,22 +100,38 @@
   transition: r var(--dur-med) var(--ease), fill var(--dur-med) var(--ease), opacity var(--dur-med) var(--ease);
 }
 
-.spawn--dim .spawn__dot {
-  opacity: 0.45;
+/* Mit Position: möglich = gefüllt, Größe = aktuelle Chance; gesperrt = nur Ring. */
+.spawn--on .spawn__dot {
+  fill: var(--color-enemy);
 }
 
-.spawn--blocked .spawn__dot {
-  fill: var(--color-blocked);
-}
-
-.spawn__cross {
-  stroke: var(--color-text);
+.spawn--off .spawn__dot {
+  fill: none;
+  stroke: var(--color-blocked);
   stroke-width: var(--stroke-mid);
-  stroke-linecap: round;
 }
 
-.spawn--likely .spawn__dot {
+.spawn--top .spawn__dot {
   filter: drop-shadow(var(--shadow-glow-orange));
+}
+
+.spawn__badge {
+  fill: var(--color-text);
+}
+
+.threat-line {
+  stroke: var(--color-enemy);
+  stroke-width: var(--stroke-thin);
+  stroke-dasharray: var(--dash);
+  opacity: var(--opacity-soft);
+}
+
+.block-zone {
+  fill: none;
+  stroke: var(--color-you);
+  stroke-width: var(--stroke-thin);
+  stroke-dasharray: var(--dash);
+  opacity: var(--opacity-soft);
 }
 
 .spawn__pulse {

@@ -15,6 +15,8 @@ const LAYERS: { id: Layer; label: string; icon: string }[] = [
 
 const LIVE_PLAYERS = "8";
 const SIGHT_MAX_M = 70;
+const OFF_RADIUS = 5;
+const BADGE_RADIUS = 8;
 
 function spawnRadius(share: number): number {
   return 5 + 45 * share;
@@ -117,11 +119,13 @@ export async function renderMapView(root: HTMLElement, id: string): Promise<void
       if (layer) btn.setAttribute("aria-pressed", String(state.layers.has(layer.id)));
     }
     reset.hidden = state.you === null;
-    if (hint) {
-      hint.textContent = state.you ? "Gelb = deine Sicht · leuchtend = kommt wahrscheinlich" : "Tippe, wo du stehst";
-    }
     drawSight(gSight, walls, map, state.you);
-    drawSpawns(gSpawns, gFacing, map, walls, state);
+    const counts = drawSpawns(gSpawns, gFacing, map, walls, state);
+    if (hint) {
+      hint.textContent = counts
+        ? `● ${counts.open} möglich · ○ ${counts.blocked} gesperrt`
+        : "Halte und zieh dorthin, wo du stehst";
+    }
     drawStarts(gStarts, map, state.layers.has("starts"));
     drawYou(gYou, state.you);
   }
@@ -134,43 +138,43 @@ function drawSight(g: SVGGElement, walls: Bitmap, map: MapData, you: Point | nul
   if (!you) return;
   const poly = sightPolygon(walls, you, SIGHT_MAX_M / map.mPerPx);
   el("polygon", { class: "sight", points: poly.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ") }, g);
+  el("circle", { class: "block-zone", cx: you[0], cy: you[1], r: map.model.blockM / map.mPerPx }, g);
 }
 
+/** Ohne Position: Grundhäufigkeit. Mit Position: möglich (Größe = aktuelle Chance) oder gesperrt. */
 function drawSpawns(
   g: SVGGElement,
-  gFacing: SVGGElement,
+  gUnder: SVGGElement,
   map: MapData,
   walls: Bitmap,
   state: { layers: Set<Layer>; you: Point | null },
-): void {
+): { open: number; blocked: number } | null {
   clear(g);
-  clear(gFacing);
-  if (!state.layers.has("spawns") && !state.you) return;
+  clear(gUnder);
   const pred = state.you ? predictSpawns(map, walls, [state.you]) : null;
   const top = pred ? topIndices(pred.p, 3) : [];
+  if (!state.layers.has("spawns") && !pred) return null;
 
   map.spawns.forEach((s, i) => {
-    const r = spawnRadius(s.share);
+    const blocked = pred?.blocked[i] ?? false;
     const rank = top.indexOf(i);
-    let mod = "";
-    if (pred?.blocked[i]) mod = " spawn--blocked";
-    else if (rank >= 0) mod = " spawn--likely";
-    else if (pred) mod = " spawn--dim";
     if (!state.layers.has("spawns") && rank < 0) return;
+    const r = pred ? (blocked ? OFF_RADIUS : 4 + 70 * (pred.p[i] ?? 0)) : spawnRadius(s.share);
+    const mod = pred ? (blocked ? " spawn--off" : " spawn--on") : "";
 
-    const node = el("g", { class: `spawn${mod}`, transform: `translate(${s.x} ${s.y})` }, g);
-    if (rank >= 0) el("circle", { class: "spawn__pulse", r: r + 6 }, node);
-    el("circle", { class: "spawn__dot", r: rank >= 0 ? r + 3 : r }, node);
-    if (pred?.blocked[i]) {
-      const k = r * 0.55;
-      el("path", { class: "spawn__cross", d: `M${-k} ${-k}L${k} ${k}M${-k} ${k}L${k} ${-k}` }, node);
+    if (state.you && rank >= 0) {
+      el("line", { class: "threat-line", x1: state.you[0], y1: state.you[1], x2: s.x, y2: s.y }, gUnder);
     }
+    const node = el("g", { class: `spawn${mod}${rank >= 0 ? " spawn--top" : ""}`, transform: `translate(${s.x} ${s.y})` }, g);
+    if (rank >= 0) el("circle", { class: "spawn__pulse", r: r + 6 }, node);
+    el("circle", { class: "spawn__dot", r }, node);
     if (rank >= 0) {
-      const t = el("text", { class: "spawn__rank", y: 1 }, node);
+      el("circle", { class: "spawn__badge", cx: r + 4, cy: -r - 4, r: BADGE_RADIUS }, node);
+      const t = el("text", { class: "spawn__rank", x: r + 4, y: -r - 3 }, node);
       t.textContent = String(rank + 1);
     }
 
-    if (state.layers.has("facing") && s.facing !== null && !pred?.blocked[i]) {
+    if (state.layers.has("facing") && s.facing !== null && !blocked) {
       const a = (s.facing * Math.PI) / 180;
       const x0 = s.x + Math.cos(a) * (r + 2);
       const y0 = s.y + Math.sin(a) * (r + 2);
@@ -183,9 +187,12 @@ function drawSpawns(
       el("path", {
         class: "facing",
         d: `M${x0} ${y0}L${x1} ${y1}M${x1 + hx} ${y1 + hy}L${x1} ${y1}L${x1 + kx} ${y1 + ky}`,
-      }, gFacing);
+      }, gUnder);
     }
   });
+  if (!pred) return null;
+  const nBlocked = pred.blocked.filter(Boolean).length;
+  return { open: pred.blocked.length - nBlocked, blocked: nBlocked };
 }
 
 function drawStarts(g: SVGGElement, map: MapData, show: boolean): void {

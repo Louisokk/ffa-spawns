@@ -55,7 +55,9 @@
   --stroke-thin: 1.5;
   --stroke-mid: 2;
   --stroke-bold: 3;
-  --map-label: 13px;
+  --map-label: 11px;
+  --dash: 4 4;
+  --opacity-soft: 0.6;
 
   /* ---- 2. SEMANTIC ---- */
   --color-bg: var(--ink-950);
