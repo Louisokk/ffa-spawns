@@ -1,6 +1,6 @@
 import { loadBitmap, loadIndex, loadMap, mapAsset } from "../../lib/data.ts";
 import { sightPolygon, snapToWalkable } from "../spawn-model/geometry.ts";
-import { convexHull, groupSpawns, type SpawnGroup } from "../spawn-model/groups.ts";
+import { groupSpawns, spanningTree, type SpawnGroup } from "../spawn-model/groups.ts";
 import { predictSpawns, topIndices, type Prediction } from "../spawn-model/predict.ts";
 import type { Bitmap, MapData, Point } from "../spawn-model/types.ts";
 import { clear, el } from "./svg.ts";
@@ -234,13 +234,14 @@ function drawGroups(
     if (gr.minor) {
       el("circle", { class: "group__ring", cx: gr.center[0], cy: gr.center[1], r: MINOR_RADIUS }, node);
     } else {
-      const pts = convexHull(gr.members.map((i) => [map.spawns[i]?.x ?? 0, map.spawns[i]?.y ?? 0] as Point));
-      if (pts.length === 1) {
-        el("circle", { class: "group__shape", cx: pts[0]?.[0] ?? 0, cy: pts[0]?.[1] ?? 0, r: GROUP_PAD }, node);
-      } else {
-        const d = `M${pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join("L")}Z`;
-        el("path", { class: "group__shape", d, "stroke-width": GROUP_PAD * 2 }, node);
+      // Spur statt Hülle: Kreise um die Punkte, verbunden über den kürzesten Baum.
+      // Eine Hülle würde bei weit gestreuten Punkten ganze Gebäude überdecken.
+      const pts = gr.members.map((i) => [map.spawns[i]?.x ?? 0, map.spawns[i]?.y ?? 0] as Point);
+      const blob = el("g", { class: "group__shape" }, node);
+      for (const [a, b] of spanningTree(pts)) {
+        el("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], "stroke-width": GROUP_PAD * 2 }, blob);
       }
+      for (const p of pts) el("circle", { cx: p[0], cy: p[1], r: GROUP_PAD }, blob);
       const pct = Math.round((chance[k] ?? 0) * 100);
       if (open[k] && pct >= 1) {
         const t = el("text", { class: "group__label", x: gr.center[0], y: gr.center[1] + 1 }, node);

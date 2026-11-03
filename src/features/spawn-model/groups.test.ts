@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { convexHull, groupSpawns } from "./groups.ts";
+import { convexHull, groupSpawns, spanningTree } from "./groups.ts";
 import type { Bitmap, MapData } from "./types.ts";
 
 function bitmap(width: number, height: number, set: (x: number, y: number) => boolean): Bitmap {
@@ -63,5 +63,14 @@ describe("Konvexe Hülle", () => {
   it("lässt innere Punkte weg", () => {
     const hull = convexHull([[0, 0], [10, 0], [10, 10], [0, 10], [5, 5]]);
     expect(hull).toHaveLength(4);
+  });
+});
+
+describe("Spur eines Bereichs", () => {
+  it("verbindet n Punkte mit n−1 kürzesten Kanten", () => {
+    const edges = spanningTree([[0, 0], [10, 0], [20, 0], [10, 50]]);
+    expect(edges).toHaveLength(3);
+    const total = edges.reduce((a, [p, q]) => a + Math.hypot(p[0] - q[0], p[1] - q[1]), 0);
+    expect(total).toBeCloseTo(70, 6);
   });
 });

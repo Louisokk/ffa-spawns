@@ -188,7 +188,7 @@
 .group__shape {
   fill: var(--color-enemy);
   stroke: var(--color-enemy);
-  stroke-linejoin: round;
+  stroke-linecap: round;
   opacity: var(--opacity-area);
   transition: opacity var(--dur-med) var(--ease);
 }
@@ -199,7 +199,7 @@
 }
 
 .group--off .group__shape {
-  fill: none;
+  fill: var(--color-blocked);
   stroke: var(--color-blocked);
   opacity: var(--opacity-area);
 }

@@ -101,3 +101,29 @@ export function convexHull(points: readonly Point[]): Point[] {
   }
   return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 }
+
+/** Kürzester verbindender Baum (Prim) als Kantenliste, für die Spur eines Bereichs. */
+export function spanningTree(points: readonly Point[]): [Point, Point][] {
+  if (points.length < 2) return [];
+  const inTree = new Set<number>([0]);
+  const edges: [Point, Point][] = [];
+  while (inTree.size < points.length) {
+    let best: [number, number, number] | null = null;
+    for (const i of inTree) {
+      for (let j = 0; j < points.length; j++) {
+        if (inTree.has(j)) continue;
+        const a = points[i];
+        const b = points[j];
+        if (!a || !b) continue;
+        const d = distance(a, b);
+        if (!best || d < best[2]) best = [i, j, d];
+      }
+    }
+    if (!best) break;
+    const a = points[best[0]];
+    const b = points[best[1]];
+    if (a && b) edges.push([a, b]);
+    inTree.add(best[1]);
+  }
+  return edges;
+}
