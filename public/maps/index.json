@@ -12,7 +12,7 @@
  {
   "id": "lithium",
   "name": "Lithium",
-  "measured": false
+  "measured": true
  },
  {
   "id": "lotus",
