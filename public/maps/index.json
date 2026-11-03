@@ -27,7 +27,7 @@
  {
   "id": "munition",
   "name": "Munition",
-  "measured": false
+  "measured": true
  },
  {
   "id": "nautical",
