@@ -1,14 +1,16 @@
 import { loadBitmap, loadIndex, loadMap, mapAsset } from "../../lib/data.ts";
 import { sightPolygon, snapToWalkable } from "../spawn-model/geometry.ts";
-import { predictSpawns, topIndices } from "../spawn-model/predict.ts";
+import { convexHull, groupSpawns, type SpawnGroup } from "../spawn-model/groups.ts";
+import { predictSpawns, topIndices, type Prediction } from "../spawn-model/predict.ts";
 import type { Bitmap, MapData, Point } from "../spawn-model/types.ts";
 import { clear, el } from "./svg.ts";
 import "./map-view.css";
 
-type Layer = "spawns" | "starts" | "facing";
+type Layer = "groups" | "spawns" | "starts" | "facing";
 
 const LAYERS: { id: Layer; label: string; icon: string }[] = [
-  { id: "spawns", label: "Respawn", icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>` },
+  { id: "groups", label: "Bereiche", icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9c0-3 3-5 7-5s7 2 7 6-2 9-7 9-7-6-7-10z"/></svg>` },
+  { id: "spawns", label: "Punkte", icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="3"/><circle cx="16" cy="7" r="2"/><circle cx="13" cy="16" r="3"/></svg>` },
   { id: "starts", label: "Start", icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 8-8 8-8-8z"/></svg>` },
   { id: "facing", label: "Blick", icon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h11M11 6l6 6-6 6"/></svg>` },
 ];
@@ -17,6 +19,9 @@ const LIVE_PLAYERS = "8";
 const SIGHT_MAX_M = 70;
 const OFF_RADIUS = 5;
 const BADGE_RADIUS = 8;
+const GROUP_PAD = 12;
+const MINOR_RADIUS = 6;
+const ARROW_LEN = 26;
 
 function spawnRadius(share: number): number {
   return 5 + 45 * share;
@@ -31,7 +36,8 @@ export async function renderMapView(root: HTMLElement, id: string): Promise<void
   ]);
   const name = index.find((m) => m.id === id)?.name ?? id;
   const [w, h] = map.size;
-  const state: { layers: Set<Layer>; you: Point | null } = { layers: new Set(["spawns", "starts"]), you: null };
+  const groups = groupSpawns(map, walls);
+  const state: { layers: Set<Layer>; you: Point | null } = { layers: new Set(["groups", "starts", "facing"]), you: null };
 
   root.innerHTML = "";
   const view = document.createElement("main");
@@ -59,6 +65,7 @@ export async function renderMapView(root: HTMLElement, id: string): Promise<void
   const svg = el("svg", { class: "overlay", viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Spawnpunkte" }, frame);
   const gSight = el("g", {}, svg);
   const gStarts = el("g", {}, svg);
+  const gGroups = el("g", {}, svg);
   const gFacing = el("g", {}, svg);
   const gSpawns = el("g", {}, svg);
   const gYou = el("g", {}, svg);
@@ -120,10 +127,15 @@ export async function renderMapView(root: HTMLElement, id: string): Promise<void
     }
     reset.hidden = state.you === null;
     drawSight(gSight, walls, map, state.you);
-    const counts = drawSpawns(gSpawns, gFacing, map, walls, state);
+    const pred = state.you ? predictSpawns(map, walls, [state.you]) : null;
+    clear(gFacing);
+    const groupCounts = drawGroups(gGroups, gFacing, map, groups, pred, state);
+    const pointCounts = drawSpawns(gSpawns, gFacing, map, pred, state);
+    const counts = groupCounts ?? pointCounts;
     if (hint) {
+      const what = groupCounts ? "Bereiche" : "Spawns";
       hint.textContent = counts
-        ? `● ${counts.open} möglich · ○ ${counts.blocked} gesperrt`
+        ? `● ${counts.open} ${what} möglich · ○ ${counts.blocked} gesperrt`
         : "Halte und zieh dorthin, wo du stehst";
     }
     drawStarts(gStarts, map, state.layers.has("starts"));
@@ -146,13 +158,14 @@ function drawSpawns(
   g: SVGGElement,
   gUnder: SVGGElement,
   map: MapData,
-  walls: Bitmap,
+  pred: Prediction | null,
   state: { layers: Set<Layer>; you: Point | null },
 ): { open: number; blocked: number } | null {
   clear(g);
-  clear(gUnder);
-  const pred = state.you ? predictSpawns(map, walls, [state.you]) : null;
-  const top = pred ? topIndices(pred.p, 3) : [];
+  // Mit Bereichen an zeigen die Bereiche die Top 3; Einzelpunkte nur auf Wunsch.
+  const groupsOn = state.layers.has("groups");
+  if (groupsOn && !state.layers.has("spawns")) return null;
+  const top = pred && !groupsOn ? topIndices(pred.p, 3) : [];
   if (!state.layers.has("spawns") && !pred) return null;
 
   map.spawns.forEach((s, i) => {
@@ -193,6 +206,73 @@ function drawSpawns(
   if (!pred) return null;
   const nBlocked = pred.blocked.filter(Boolean).length;
   return { open: pred.blocked.length - nBlocked, blocked: nBlocked };
+}
+
+function drawGroups(
+  g: SVGGElement,
+  gUnder: SVGGElement,
+  map: MapData,
+  groups: SpawnGroup[],
+  pred: Prediction | null,
+  state: { layers: Set<Layer>; you: Point | null },
+): { open: number; blocked: number } | null {
+  clear(g);
+  if (!state.layers.has("groups")) return null;
+  const chance = groups.map((gr) => (pred ? gr.members.reduce((a, i) => a + (pred.p[i] ?? 0), 0) : gr.share));
+  const open = groups.map((gr) => (pred ? gr.members.some((i) => !pred.blocked[i]) : true));
+  const top = pred ? topIndices(chance, 3) : [];
+
+  // Große Bereiche zuerst zeichnen, seltene darüber, damit sie nicht verschwinden.
+  const order = groups.map((_, k) => k).sort((a, b) => Number(groups[a]?.minor) - Number(groups[b]?.minor));
+  for (const k of order) {
+    const gr = groups[k];
+    if (!gr) continue;
+    const rank = top.indexOf(k);
+    const mod = `${open[k] ? "" : " group--off"}${rank >= 0 ? " group--top" : ""}${gr.minor ? " group--minor" : ""}`;
+    const node = el("g", { class: `group${mod}` }, g);
+
+    if (gr.minor) {
+      el("circle", { class: "group__ring", cx: gr.center[0], cy: gr.center[1], r: MINOR_RADIUS }, node);
+    } else {
+      const pts = convexHull(gr.members.map((i) => [map.spawns[i]?.x ?? 0, map.spawns[i]?.y ?? 0] as Point));
+      if (pts.length === 1) {
+        el("circle", { class: "group__shape", cx: pts[0]?.[0] ?? 0, cy: pts[0]?.[1] ?? 0, r: GROUP_PAD }, node);
+      } else {
+        const d = `M${pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join("L")}Z`;
+        el("path", { class: "group__shape", d, "stroke-width": GROUP_PAD * 2 }, node);
+      }
+      const pct = Math.round((chance[k] ?? 0) * 100);
+      if (open[k] && pct >= 1) {
+        const t = el("text", { class: "group__label", x: gr.center[0], y: gr.center[1] + 1 }, node);
+        t.textContent = `${pct}%`;
+      }
+    }
+
+    if (state.layers.has("facing") && gr.facing !== null && !gr.minor && open[k]) {
+      const a = (gr.facing * Math.PI) / 180;
+      const x0 = gr.center[0] + Math.cos(a) * (GROUP_PAD + 2);
+      const y0 = gr.center[1] + Math.sin(a) * (GROUP_PAD + 2);
+      const x1 = gr.center[0] + Math.cos(a) * (GROUP_PAD + ARROW_LEN);
+      const y1 = gr.center[1] + Math.sin(a) * (GROUP_PAD + ARROW_LEN);
+      el("path", {
+        class: "facing",
+        d: `M${x0} ${y0}L${x1} ${y1}M${x1 + Math.cos(a + 2.6) * 7} ${y1 + Math.sin(a + 2.6) * 7}L${x1} ${y1}L${x1 + Math.cos(a - 2.6) * 7} ${y1 + Math.sin(a - 2.6) * 7}`,
+      }, gUnder);
+    }
+
+    if (rank >= 0 && state.you) {
+      el("line", { class: "threat-line", x1: state.you[0], y1: state.you[1], x2: gr.center[0], y2: gr.center[1] }, gUnder);
+      const bx = gr.center[0] + GROUP_PAD + 4;
+      const by = gr.center[1] - GROUP_PAD - 4;
+      el("circle", { class: "spawn__badge", cx: bx, cy: by, r: BADGE_RADIUS }, node);
+      const t = el("text", { class: "spawn__rank", x: bx, y: by + 1 }, node);
+      t.textContent = String(rank + 1);
+    }
+  }
+  if (!pred) return null;
+  const major = groups.map((gr, k) => ({ gr, open: open[k] })).filter((x) => !x.gr.minor);
+  const nOpen = major.filter((x) => x.open).length;
+  return { open: nOpen, blocked: major.length - nOpen };
 }
 
 function drawStarts(g: SVGGElement, map: MapData, show: boolean): void {

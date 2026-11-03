@@ -184,12 +184,61 @@
   stroke-width: var(--stroke-bold);
 }
 
+/* ---- Spawn-Bereiche ---- */
+.group__shape {
+  fill: var(--color-enemy);
+  stroke: var(--color-enemy);
+  stroke-linejoin: round;
+  opacity: var(--opacity-area);
+  transition: opacity var(--dur-med) var(--ease);
+}
+
+.group--top .group__shape {
+  opacity: var(--opacity-area-top);
+  filter: drop-shadow(var(--shadow-glow-orange));
+}
+
+.group--off .group__shape {
+  fill: none;
+  stroke: var(--color-blocked);
+  opacity: var(--opacity-area);
+}
+
+.group__ring {
+  fill: none;
+  stroke: var(--color-enemy);
+  stroke-width: var(--stroke-mid);
+  stroke-dasharray: var(--dash);
+  opacity: var(--opacity-soft);
+}
+
+.group--off .group__ring {
+  stroke: var(--color-blocked);
+}
+
+.group__label {
+  fill: var(--color-text);
+  stroke: var(--color-bg);
+  stroke-width: var(--stroke-bold);
+  paint-order: stroke;
+  font-family: var(--font-display);
+  font-size: var(--map-label-lg);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.toggle--groups[aria-pressed="true"] svg {
+  color: var(--color-enemy);
+}
+
 /* ---- Schalterleiste ---- */
 .toggles {
   display: flex;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-gutter) calc(var(--space-2) + env(safe-area-inset-bottom));
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
   border-top: var(--border-hairline) solid var(--color-border);
   background: var(--color-surface);
 }
@@ -200,9 +249,11 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-width: var(--toggle-min);
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: var(--toggle-max);
   min-height: var(--tap-min);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1);
   border: var(--border-hairline) solid var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
@@ -224,7 +275,7 @@
 .toggle__label {
   font-family: var(--font-display);
   font-size: var(--text-xs);
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-tight);
   text-transform: uppercase;
 }
 

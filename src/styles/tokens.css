@@ -31,6 +31,7 @@
   --font-display: "Bahnschrift", "DIN Alternate", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --tracking-wide: 0.12em;
+  --tracking-tight: 0.04em;
   --leading-tight: 1.15;
 
   --radius-sm: 6px;
@@ -43,7 +44,7 @@
 
   --tap-min: 44px;
   --bar-height: 72px;
-  --toggle-min: 72px;
+  --toggle-max: 96px;
   --card-min: 150px;
   --page-max: 960px;
   --icon-md: 20px;
@@ -58,6 +59,9 @@
   --map-label: 11px;
   --dash: 4 4;
   --opacity-soft: 0.6;
+  --opacity-area: 0.32;
+  --opacity-area-top: 0.55;
+  --map-label-lg: 14px;
 
   /* ---- 2. SEMANTIC ---- */
   --color-bg: var(--ink-950);
